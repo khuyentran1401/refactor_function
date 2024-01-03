@@ -24,76 +24,91 @@ class MeanSeriesImputer(SeriesImputer):
         return series.fillna(series.mean())
 
 
-class DataFrameImputer(ABC):
-    @abstractmethod
-    def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        pass
+def impute_missing_values_with_group_statistic(
+    df: pd.DataFrame,
+    group_feature: str,
+    target_feature: str,
+    strategy: SeriesImputer,
+) -> pd.DataFrame:
+    df[target_feature] = df.groupby(group_feature)[target_feature].transform(
+        strategy.impute
+    )
+    return df
 
 
-class GroupStatisticImputer(DataFrameImputer):
-    def __init__(self, strategy: SeriesImputer, group_feature: str, target_feature: str):
-        self.strategy = strategy
-        self.group_feature = group_feature
-        self.target_feature = target_feature
-
-    def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        df[self.target_feature] = df.groupby(self.group_feature)[
-            self.target_feature
-        ].transform(self.strategy.impute)
-        return df
+def impute_missing_values_with_constant(
+    df: pd.DataFrame, features: list, impute_value: Union[str, int, float]
+) -> pd.DataFrame:
+    df[features] = df[features].fillna(impute_value)
+    return df
 
 
-class ConstantImputer(DataFrameImputer):
-    def __init__(self, features: list, fill_value: Union[str, float, int]):
-        self.features = features
-        self.fill_value = fill_value
-
-    def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        df[self.features] = df[self.features].fillna(self.fill_value)
-        return df
-
-
-class StatisticsImputer(DataFrameImputer):
-    def __init__(self, features: list, strategy: SeriesImputer):
-        self.features = features
-        self.strategy = strategy
-
-    def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        df[self.features] = df[self.features].apply(self.strategy.impute)
-        return df
+def impute_missing_values_with_statistics(
+    df: pd.DataFrame, features: list, strategy: SeriesImputer
+) -> pd.DataFrame:
+    df[features] = df[features].apply(strategy.impute)
+    return df
 
 
 def impute_missing_values(
-    df: pd.DataFrame, imputers: list[DataFrameImputer]
+    df: pd.DataFrame,
+    group_imputers: list,
+    categorical_constant_imputers: list,
+    numerical_constant_imputer: dict,
+    categorical_statistic_imputers: dict,
 ) -> pd.DataFrame:
-    for imputer in imputers:
-        df = imputer.impute(df)
+    categorical_features = df.select_dtypes(include=["object"]).columns
+    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
+    for imputer in group_imputers:
+        df = impute_missing_values_with_group_statistic(
+            df,
+            strategy=imputer.get("strategy"),
+            group_feature=imputer.get("group_feature"),
+            target_feature=imputer.get("target_feature"),
+        )
+
+    for imputer in categorical_constant_imputers:
+        df = impute_missing_values_with_constant(
+            df,
+            features=imputer.get("features"),
+            impute_value=imputer.get("impute_value"),
+        )
+    df = impute_missing_values_with_statistics(
+        df,
+        features=categorical_features,
+        strategy=categorical_statistic_imputers.get("strategy"),
+    )
+    df = impute_missing_values_with_constant(
+        df,
+        features=numerical_features,
+        impute_value=numerical_constant_imputer.get("impute_value"),
+    )
     return df
 
 
 if __name__ == "__main__":
     df = pd.read_csv("data/train.csv")
-
-    categorical_features = df.select_dtypes(include=["object"]).columns
-    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
-
     group_imputers = [
-        GroupStatisticImputer(
-            strategy=MostFrequentSeriesImputer(),
-            group_feature="MSSubClass",
-            target_feature="MSZoning",
-        ),
-        GroupStatisticImputer(
-            strategy=MedianSeriesImputer(),
-            group_feature="Neighborhood",
-            target_feature="LotFrontage",
-        ),
+        {
+            "strategy": MostFrequentSeriesImputer(),
+            "group_feature": "MSSubClass",
+            "target_feature": "MSZoning",
+        },
+        {
+            "strategy": MedianSeriesImputer(),
+            "group_feature": "Neighborhood",
+            "target_feature": "LotFrontage",
+        },
     ]
 
-    constant_imputers = [
-        ConstantImputer(features=["Functional"], fill_value="Typ"),
-        ConstantImputer(
-            features=[
+    categorical_constant_imputers = [
+        {
+            "impute_value": "Typ",
+            "features": ["Functional"],
+        },
+        {
+            "impute_value": "Missing",
+            "features": [
                 "Alley",
                 "GarageType",
                 "GarageFinish",
@@ -109,16 +124,21 @@ if __name__ == "__main__":
                 "Fence",
                 "MiscFeature",
             ],
-            fill_value="Missing",
-        ),
-        ConstantImputer(features=numerical_features, fill_value=0),
+        },
     ]
 
-    statistic_imputers = [
-        StatisticsImputer(
-            features=categorical_features, strategy=MostFrequentSeriesImputer()
-        )
-    ]
-    imputers = group_imputers + constant_imputers + statistic_imputers
-    df = impute_missing_values(df, imputers)
-    print(f'There are {df.isna().sum().sum()} null values after imputing')
+    categorical_statistic_imputer = {"strategy": MostFrequentSeriesImputer()}
+
+    numerical_constant_imputer = {"impute_value": 0}
+
+    categorical_features = df.select_dtypes(include=["object"]).columns
+    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
+
+    impute_missing_values(
+        df,
+        group_imputers,
+        categorical_constant_imputers,
+        numerical_constant_imputer,
+        categorical_statistic_imputer,
+    )
+    print(f"There are {df.isna().sum().sum()} null values after imputing")
