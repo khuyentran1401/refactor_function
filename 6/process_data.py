@@ -3,16 +3,25 @@ from abc import abstractmethod, ABC
 from typing import Union
 
 
-def most_frequent_series_imputer(series: pd.Series) -> pd.Series:
-    return series.fillna(series.mode()[0])
+class SeriesImputer(ABC):
+    @abstractmethod
+    def impute(self, series: pd.Series) -> pd.Series:
+        pass
 
 
-def median_series_imputer(series: pd.Series) -> pd.Series:
-    return series.fillna(series.median())
+class MostFrequentSeriesImputer(SeriesImputer):
+    def impute(self, series: pd.Series) -> pd.Series:
+        return series.fillna(series.mode()[0])
 
 
-def mean_series_imputer(series: pd.Series) -> pd.Series:
-    return series.fillna(series.mean())
+class MedianSeriesImputer(SeriesImputer):
+    def impute(self, series: pd.Series) -> pd.Series:
+        return series.fillna(series.median())
+
+
+class MeanSeriesImputer(SeriesImputer):
+    def impute(self, series: pd.Series) -> pd.Series:
+        return series.fillna(series.mean())
 
 
 class DataFrameImputer(ABC):
@@ -22,24 +31,15 @@ class DataFrameImputer(ABC):
 
 
 class GroupStatisticImputer(DataFrameImputer):
-    def __init__(self, strategy: str, group_feature: str, target_feature: str):
+    def __init__(self, strategy: SeriesImputer, group_feature: str, target_feature: str):
         self.strategy = strategy
         self.group_feature = group_feature
         self.target_feature = target_feature
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        if self.strategy == "most_frequent":
-            df[self.target_feature] = df.groupby(self.group_feature)[
-                self.target_feature
-            ].transform(most_frequent_series_imputer)
-        elif self.strategy == "median":
-            df[self.target_feature] = df.groupby(self.group_feature)[
-                self.target_feature
-            ].transform(median_series_imputer)
-        elif self.strategy == "mean":
-            df[self.target_feature] = df.groupby(self.group_feature)[
-                self.target_feature
-            ].transform(mean_series_imputer)
+        df[self.target_feature] = df.groupby(self.group_feature)[
+            self.target_feature
+        ].transform(self.strategy.impute)
         return df
 
 
@@ -54,17 +54,12 @@ class ConstantImputer(DataFrameImputer):
 
 
 class StatisticsImputer(DataFrameImputer):
-    def __init__(self, features: list, strategy: str):
+    def __init__(self, features: list, strategy: SeriesImputer):
         self.features = features
         self.strategy = strategy
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        if self.strategy == "most_frequent":
-            df[self.features] = df[self.features].apply(most_frequent_series_imputer)
-        elif self.strategy == "median":
-            df[self.features] = df[self.features].apply(median_series_imputer)
-        elif self.strategy == "mean":
-            df[self.features] = df[self.features].apply(mean_series_imputer)
+        df[self.features] = df[self.features].apply(self.strategy.impute)
         return df
 
 
@@ -84,12 +79,12 @@ if __name__ == "__main__":
 
     group_imputers = [
         GroupStatisticImputer(
-            strategy="most_frequent",
+            strategy=MostFrequentSeriesImputer(),
             group_feature="MSSubClass",
             target_feature="MSZoning",
         ),
         GroupStatisticImputer(
-            strategy="median",
+            strategy=MedianSeriesImputer(),
             group_feature="Neighborhood",
             target_feature="LotFrontage",
         ),
@@ -120,8 +115,10 @@ if __name__ == "__main__":
     ]
 
     statistic_imputers = [
-        StatisticsImputer(features=categorical_features, strategy="most_frequent")
+        StatisticsImputer(
+            features=categorical_features, strategy=MostFrequentSeriesImputer()
+        )
     ]
     imputers = group_imputers + constant_imputers + statistic_imputers
     df = impute_missing_values(df, imputers)
-    print(f"There are {df.isna().sum().sum()} null values after imputing")
+    print(f'There are {df.isna().sum().sum()} null values after imputing')

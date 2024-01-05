@@ -1,13 +1,7 @@
-from typing import Union, Literal, Iterable
+from typing import Union, Iterable
 import pandas as pd
 
 Features = Union[int, str, Iterable[Union[str, int]]]
-
-
-def check_strategy(strategy: Literal["most_frequent", "median", "mean"]):
-    if strategy not in ["most_frequent", "median", "mean"]:
-        raise ValueError("Strategy must be one of most_frequent, median, or mean")
-    return strategy
 
 
 def check_features_is_list(features: Features) -> Iterable[Union[str, int]]:

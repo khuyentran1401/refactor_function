@@ -1,39 +1,38 @@
 import pandas as pd
+from abc import abstractmethod, ABC
 from typing import Union
 
 
-def most_frequent_series_imputer(series: pd.Series) -> pd.Series:
-    return series.fillna(series.mode()[0])
+class SeriesImputer(ABC):
+    @abstractmethod
+    def impute(self, series: pd.Series) -> pd.Series:
+        pass
 
 
-def median_series_imputer(series: pd.Series) -> pd.Series:
-    return series.fillna(series.median())
+class MostFrequentSeriesImputer(SeriesImputer):
+    def impute(self, series: pd.Series) -> pd.Series:
+        return series.fillna(series.mode()[0])
 
 
-def mean_series_imputer(series: pd.Series) -> pd.Series:
-    return series.fillna(series.mean())
+class MedianSeriesImputer(SeriesImputer):
+    def impute(self, series: pd.Series) -> pd.Series:
+        return series.fillna(series.median())
+
+
+class MeanSeriesImputer(SeriesImputer):
+    def impute(self, series: pd.Series) -> pd.Series:
+        return series.fillna(series.mean())
 
 
 def impute_missing_values_with_group_statistic(
     df: pd.DataFrame,
     group_feature: str,
     target_feature: str,
-    strategy: str,
+    strategy: SeriesImputer,
 ) -> pd.DataFrame:
-    if df[group_feature].isna().any():
-        raise ValueError(f"Group feature {group_feature} has missing values")
-    if strategy == "most_frequent":
-        df[target_feature] = df.groupby(group_feature)[
-            target_feature
-        ].transform(most_frequent_series_imputer)
-    elif strategy == "median":
-        df[target_feature] = df.groupby(group_feature)[
-            target_feature
-        ].transform(median_series_imputer)
-    elif strategy == "mean":
-        df[target_feature] = df.groupby(group_feature)[
-            target_feature
-        ].transform(mean_series_imputer)
+    df[target_feature] = df.groupby(group_feature)[target_feature].transform(
+        strategy.impute
+    )
     return df
 
 
@@ -45,14 +44,9 @@ def impute_missing_values_with_constant(
 
 
 def impute_missing_values_with_statistics(
-    df: pd.DataFrame, features: list, strategy: str 
+    df: pd.DataFrame, features: list, strategy: SeriesImputer
 ) -> pd.DataFrame:
-    if strategy == "most_frequent":
-        df[features] = df[features].apply(most_frequent_series_imputer)
-    elif strategy == "median":
-        df[features] = df[features].apply(median_series_imputer)
-    elif strategy == "mean":
-        df[features] = df[features].apply(mean_series_imputer)
+    df[features] = df[features].apply(strategy.impute)
     return df
 
 
@@ -96,12 +90,12 @@ if __name__ == "__main__":
     df = pd.read_csv("data/train.csv")
     group_imputers = [
         {
-            "strategy": "most_frequent",
+            "strategy": MostFrequentSeriesImputer(),
             "group_feature": "MSSubClass",
             "target_feature": "MSZoning",
         },
         {
-            "strategy": "median",
+            "strategy": MedianSeriesImputer(),
             "group_feature": "Neighborhood",
             "target_feature": "LotFrontage",
         },
@@ -133,7 +127,7 @@ if __name__ == "__main__":
         },
     ]
 
-    categorical_statistic_imputer = {"strategy": "most_frequent"}
+    categorical_statistic_imputer = {"strategy": MostFrequentSeriesImputer()}
 
     numerical_constant_imputer = {"impute_value": 0}
 
