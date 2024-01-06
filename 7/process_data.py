@@ -1,7 +1,7 @@
 import pandas as pd
 from abc import abstractmethod, ABC
-from typing import Union
-from utils import check_features_in_df, check_features_is_list, Features
+from typing import Union, Iterable
+from utils import check_variables_in_df, check_variables_is_list, IntOrStr
 
 
 class SeriesImputer(ABC):
@@ -40,8 +40,13 @@ class GroupStatisticImputer(DataFrameImputer):
         self.target_feature = target_feature
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        group_feature = check_features_in_df(df, self.group_feature)
-        target_feature = check_features_in_df(df, self.target_feature)
+        group_feature = check_variables_in_df(df, self.group_feature)
+        target_feature = check_variables_in_df(df, self.target_feature)
+
+        if df[group_feature].isna().any():
+            raise ValueError(
+                f"Group feature {self.group_feature} cannot contain NaN values"
+            )
 
         df[target_feature] = df.groupby(group_feature)[target_feature].transform(
             self.strategy.impute
@@ -50,31 +55,32 @@ class GroupStatisticImputer(DataFrameImputer):
 
 
 class ConstantImputer(DataFrameImputer):
-    def __init__(self, features: Features, fill_value: Union[str, float, int]):
-        self.features = check_features_is_list(features)
+    def __init__(self, features: Union[IntOrStr, Iterable[IntOrStr]], fill_value: Union[str, float, int]):
+        self.features = features
         self.fill_value = fill_value
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        features = check_features_in_df(df, self.features)
+        features = check_variables_in_df(df, self.features)
         df[features] = df[features].fillna(self.fill_value)
         return df
 
 
 class StatisticsImputer(DataFrameImputer):
-    def __init__(self, features: Features, strategy: SeriesImputer):
-        self.features = check_features_is_list(features)
+    def __init__(self, features: Union[IntOrStr, Iterable[IntOrStr]], strategy: SeriesImputer):
+        self.features = check_variables_is_list(features)
         self.strategy = strategy
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        features = check_features_in_df(df, self.features)
+        features = check_variables_in_df(df, self.features)
         df[features] = df[features].apply(self.strategy.impute)
         return df
 
 
 def impute_missing_values(
-    df: pd.DataFrame, imputers: list[DataFrameImputer]
+    df: pd.DataFrame, imputers: Union[DataFrameImputer, list[DataFrameImputer]]
 ) -> pd.DataFrame:
-    for imputer in imputers:
+    imputers_ = check_variables_is_list(imputers)
+    for imputer in imputers_:
         df = imputer.impute(df)
     return df
 
