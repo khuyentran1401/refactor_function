@@ -1,7 +1,9 @@
 import pandas as pd
 from abc import abstractmethod, ABC
-from typing import Union, Iterable
-from utils import check_variables_in_df, check_variables_is_list, IntOrStr
+from typing import Union, Iterable, TypeVar
+from utils import check_variables_in_df, check_variables_is_list
+
+NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 
 
 class SeriesImputer(ABC):
@@ -55,7 +57,11 @@ class GroupStatisticImputer(DataFrameImputer):
 
 
 class ConstantImputer(DataFrameImputer):
-    def __init__(self, features: Union[IntOrStr, Iterable[IntOrStr]], fill_value: Union[str, float, int]):
+    def __init__(
+        self,
+        features: Union[NumberOrStr, Iterable[NumberOrStr]],
+        fill_value: NumberOrStr,
+    ):
         self.features = features
         self.fill_value = fill_value
 
@@ -66,7 +72,11 @@ class ConstantImputer(DataFrameImputer):
 
 
 class StatisticsImputer(DataFrameImputer):
-    def __init__(self, features: Union[IntOrStr, Iterable[IntOrStr]], strategy: SeriesImputer):
+    def __init__(
+        self,
+        features: Union[NumberOrStr, Iterable[NumberOrStr]],
+        strategy: SeriesImputer,
+    ):
         self.features = check_variables_is_list(features)
         self.strategy = strategy
 

@@ -1,12 +1,6 @@
-from typing import Union, TypeVar, Any
+from typing import Union, Any
 from collections.abc import Iterable
 import pandas as pd
-
-IntOrStr = TypeVar("IntOrStr", int, str)
-
-
-def is_non_string_iterable(variable):
-    return isinstance(variable, Iterable) and not isinstance(variable, str)
 
 
 def check_variables_is_list(variables: Union[Any, Iterable[Any]]) -> Iterable[Any]:

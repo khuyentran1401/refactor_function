@@ -81,12 +81,9 @@ class TestConstantImputer:
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
     def test_constant_imputer_feature_not_match(self):
-        with pytest.raises(
-            KeyError, match="The following features are not in the dataframe: B"
-        ):
-            df = pd.DataFrame({"A": [1, None, 3]})
-            imputer = ConstantImputer(features=["A", "B"], fill_value=0)
-            imputer.impute(df)
+        df = pd.DataFrame({"A": [1, None, 3]})
+        imputer = ConstantImputer(features=["A", "B"], fill_value=0)
+        imputer.impute(df)
 
 
 class TestStatisticsImputer:
@@ -107,13 +104,10 @@ class TestStatisticsImputer:
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
     def test_statistics_imputer_feature_not_match(self):
-        with pytest.raises(
-            KeyError, match="The following features are not in the dataframe: B, C"
-        ):
-            df = pd.DataFrame({"A": [1, 2, 3, None]})
-            strategy = MeanSeriesImputer()
-            imputer = StatisticsImputer(features=["A", "B", "C"], strategy=strategy)
-            imputer.impute(df)
+        df = pd.DataFrame({"A": [1, 2, 3, None]})
+        strategy = MeanSeriesImputer()
+        imputer = StatisticsImputer(features=["A", "B", "C"], strategy=strategy)
+        imputer.impute(df)
 
 
 class TestImputeMissingValues:

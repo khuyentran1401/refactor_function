@@ -1,6 +1,8 @@
 import pandas as pd
 from abc import abstractmethod, ABC
-from typing import Union
+from typing import Union, TypeVar, Iterable
+
+NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 
 
 class SeriesImputer(ABC):
@@ -31,7 +33,9 @@ class DataFrameImputer(ABC):
 
 
 class GroupStatisticImputer(DataFrameImputer):
-    def __init__(self, strategy: SeriesImputer, group_feature: str, target_feature: str):
+    def __init__(
+        self, strategy: SeriesImputer, group_feature: str, target_feature: str
+    ):
         self.strategy = strategy
         self.group_feature = group_feature
         self.target_feature = target_feature
@@ -44,7 +48,7 @@ class GroupStatisticImputer(DataFrameImputer):
 
 
 class ConstantImputer(DataFrameImputer):
-    def __init__(self, features: list, fill_value: Union[str, float, int]):
+    def __init__(self, features: Iterable[NumberOrStr], fill_value: NumberOrStr):
         self.features = features
         self.fill_value = fill_value
 
@@ -54,7 +58,7 @@ class ConstantImputer(DataFrameImputer):
 
 
 class StatisticsImputer(DataFrameImputer):
-    def __init__(self, features: list, strategy: SeriesImputer):
+    def __init__(self, features: Iterable[NumberOrStr], strategy: SeriesImputer):
         self.features = features
         self.strategy = strategy
 
@@ -121,4 +125,4 @@ if __name__ == "__main__":
     ]
     imputers = group_imputers + constant_imputers + statistic_imputers
     df = impute_missing_values(df, imputers)
-    print(f'There are {df.isna().sum().sum()} null values after imputing')
+    print(f"There are {df.isna().sum().sum()} null values after imputing")
