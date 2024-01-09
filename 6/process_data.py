@@ -1,6 +1,6 @@
 import pandas as pd
 from abc import abstractmethod, ABC
-from typing import Union, TypeVar, Iterable
+from typing import TypeVar, Iterable
 
 NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 

@@ -120,23 +120,21 @@ class TestImputeMissingValues:
     def test_impute_missing_values(self):
         df = pd.DataFrame(
             {
-                "Group": ["A", "A", "B", "B"],
-                "Value": [1, None, 3, None],
-                "Constant": [None, None, None, None],
+                "Cat": ["A", None, "B", "B"],
+                "Num": [1, None, 3, None],
             }
         )
-        group_strategy = MeanSeriesImputer()
-        constant_value = 0
-        group_imputer = GroupStatisticImputer(group_strategy, "Group", "Value")
-        constant_imputer = ConstantImputer(
-            features=["Constant"], fill_value=constant_value
+        numerical_constant_imputer = ConstantImputer(features=["Num"], fill_value=0)
+        categorical_constant_imputer = ConstantImputer(
+            features=["Cat"], fill_value="Missing"
         )
-        result = impute_missing_values(df, [group_imputer, constant_imputer])
+        result = impute_missing_values(
+            df, [numerical_constant_imputer, categorical_constant_imputer]
+        )
         expected = pd.DataFrame(
             {
-                "Group": ["A", "A", "B", "B"],
-                "Value": [1, 1, 3, 3],
-                "Constant": [0, 0, 0, 0],
+                "Cat": ["A", "Missing", "B", "B"],
+                "Num": [1, 0, 3, 0],
             }
         )
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
