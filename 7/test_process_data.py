@@ -103,6 +103,7 @@ class TestStatisticsImputer:
         strategy = MeanSeriesImputer()
         imputer = StatisticsImputer(features="A", strategy=strategy)
         result = imputer.impute(df)
+        print(result)
         expected = pd.DataFrame({"A": [1, 2, 3, 2]})
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
@@ -144,9 +145,9 @@ class TestImputeMissingValues:
             {
                 "Group": ["A", "A", "B", "B"],
                 "Value": [1, None, 3, None],
-                "Constant": [None, None, None, None],
             }
         )
         group_imputer = GroupStatisticImputer(MeanSeriesImputer(), "Group", "Value")
         result = impute_missing_values(df, group_imputer)
+        print(result)
         pd.testing.assert_frame_equal(result, df, check_dtype=False)

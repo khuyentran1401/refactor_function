@@ -30,7 +30,6 @@ def impute_missing_values_with_statistics(
     df: pd.DataFrame,
     features: list,
     strategy: Literal["most_frequent", "median", "mean", "quantile"],
-    quantile_value: float,
 ) -> pd.DataFrame:
     if strategy == "most_frequent":
         impute_dict = df[features].mode().to_dict(orient="records")[0]
@@ -38,8 +37,6 @@ def impute_missing_values_with_statistics(
         impute_dict = df[features].median().to_dict()
     elif strategy == "mean":
         impute_dict = df[features].mean().to_dict()
-    elif strategy == "quantile":
-        impute_dict = df[features].quantile(quantile_value).to_dict()
     df[features] = df[features].fillna(impute_dict)
     return df
 

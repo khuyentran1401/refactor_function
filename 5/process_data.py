@@ -23,13 +23,6 @@ class MeanSeriesImputer(SeriesImputer):
     def impute(self, series: pd.Series) -> pd.Series:
         return series.fillna(series.mean())
 
-class QuantileImputer(SeriesImputer):
-    def __init__(self, quantile_value: float):
-        self.quantile_value = quantile_value
-
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.quantile(self.quantile_value))
-
 
 def impute_missing_values_with_group_statistic(
     df: pd.DataFrame,
