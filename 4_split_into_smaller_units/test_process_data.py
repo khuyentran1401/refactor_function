@@ -21,35 +21,38 @@ def test_impute_missing_values_with_constant():
 def test_impute_missing_values():
     df = pd.DataFrame(
         {
-            "A": ["dog", "dog", "cat", "cat", None],
-            "B": [1, 2, None, 4, 5],
-            "C": [None, 2, 3, None, 5],
+            "group": ["A", "A", "B", "B", "B"],
+            "target": [1, 2, None, 4, 4],
+            "num_constant": [None, 2, 3, None, 5],
+            "cat_constant": [None, "A", "B", "C", None],
+            "cat_statistic": [None, "A", "A", "C", None],
         }
     )
 
     # Define the configuration for imputation
     group_imputers_config = [
-        {"strategy": "mean", "group_feature": "A", "target_feature": "B"}
+        {"strategy": "most_frequent", "group_feature": "group", "target_feature": "target"}
     ]
-    categorical_constant_imputers_config = [
-        {"features": ["A"], "impute_value": "missing"}
+    constant_imputers_config = [
+        {"features": ["cat_constant"], "impute_value": "missing"},
+        {"features": ["num_constant"], "impute_value": 0},
     ]
-    numerical_constant_imputer_config = {"impute_value": 0}
-    categorical_statistic_imputers_config = {"strategy": "most_frequent"}
+    statistic_imputers_config = [{"features": ["cat_statistic"], "strategy": "most_frequent"}]
 
     # Call the impute function
     imputed_df = impute_missing_values(
         df,
         group_imputers_config,
-        categorical_constant_imputers_config,
-        numerical_constant_imputer_config,
-        categorical_statistic_imputers_config,
+        constant_imputers_config,
+        statistic_imputers_config,
     )
     expected_df = pd.DataFrame(
         {
-            "A": ["dog", "dog", "cat", "cat", "missing"],
-            "B": [1, 2, 0, 4, 5],
-            "C": [0, 2, 3, 0, 5],
+            "group": ["A", "A", "B", "B", "B"],
+            "target": [1, 2, 4, 4, 4],
+            "num_constant": [0, 2, 3, 0, 5],
+            "cat_constant": ["missing", "A", "B", "C", "missing"],
+            "cat_statistic": ["A", "A", "A", "C", "A"],
         }
     )
     pd.testing.assert_frame_equal(imputed_df, expected_df, check_dtype=False)
