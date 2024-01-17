@@ -44,12 +44,9 @@ def impute_missing_values_with_statistics(
 def impute_missing_values(
     df: pd.DataFrame,
     group_imputers_config: list,
-    categorical_constant_imputers_config: list,
-    numerical_constant_imputer_config: dict,
-    categorical_statistic_imputers_config: dict,
+    constant_imputers_config: list,
+    statistic_imputer_config: list,
 ) -> pd.DataFrame:
-    categorical_features = df.select_dtypes(include=["object"]).columns
-    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
     for imputer in group_imputers_config:
         df = impute_missing_values_with_group_statistic(
             df,
@@ -58,27 +55,25 @@ def impute_missing_values(
             target_feature=imputer.get("target_feature"),
         )
 
-    for imputer in categorical_constant_imputers_config:
+    for imputer in constant_imputers_config:
         df = impute_missing_values_with_constant(
             df,
             features=imputer.get("features"),
             impute_value=imputer.get("impute_value"),
         )
-    df = impute_missing_values_with_statistics(
-        df,
-        features=categorical_features,
-        strategy=categorical_statistic_imputers_config.get("strategy"),
-    )
-    df = impute_missing_values_with_constant(
-        df,
-        features=numerical_features,
-        impute_value=numerical_constant_imputer_config.get("impute_value"),
-    )
+    for imputer in statistic_imputer_config:
+        df = impute_missing_values_with_statistics(
+            df,
+            features=imputer.get("features"),
+            strategy=imputer.get("strategy"),
+        )
     return df
 
 
 if __name__ == "__main__":
     df = pd.read_csv("data/train.csv")
+    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
+    categorical_features = df.select_dtypes(include=["object"]).columns
     group_imputers_config = [
         {
             "strategy": "most_frequent",
@@ -92,7 +87,7 @@ if __name__ == "__main__":
         },
     ]
 
-    categorical_constant_imputers_config = [
+    constant_imputers_config = [
         {
             "impute_value": "Typ",
             "features": ["Functional"],
@@ -116,11 +111,15 @@ if __name__ == "__main__":
                 "MiscFeature",
             ],
         },
+        {
+            "impute_value": 0,
+            "features": numerical_features,
+        },
     ]
 
-    categorical_statistic_imputer = {"strategy": "most_frequent"}
-
-    numerical_constant_imputer_config = {"impute_value": 0}
+    statistic_imputer_config = [
+        {"features": categorical_features, "strategy": "most_frequent"}
+    ]
 
     categorical_features = df.select_dtypes(include=["object"]).columns
     numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
@@ -128,8 +127,7 @@ if __name__ == "__main__":
     impute_missing_values(
         df,
         group_imputers_config,
-        categorical_constant_imputers_config,
-        numerical_constant_imputer_config,
-        categorical_statistic_imputer,
+        constant_imputers_config,
+        statistic_imputer_config,
     )
     print(f"There are {df.isna().sum().sum()} null values after imputing")

@@ -95,3 +95,5 @@ src/*/data/*/*
 models/*
 *.ipynb
 data
+
+3_5*
