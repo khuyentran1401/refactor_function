@@ -13,14 +13,15 @@ def test_impute_missing_values():
             "Num": [1, None, 3, None],
         }
     )
-    numerical_constant_imputer_config = {"impute_value": 0}
-    categorical_constant_imputer_config = [
-        {"impute_value": "Missing", "features": ["Cat"]}
+    constant_imputers_config = [
+        {"impute_value": 0, "features": ["Num"]},
+        {"impute_value": "Missing", "features": ["Cat"]},
     ]
+
     result = impute_missing_values(
         df,
-        numerical_constant_imputer_config=numerical_constant_imputer_config,
-        categorical_constant_imputers_config=categorical_constant_imputer_config,
+        constant_imputers_config=constant_imputers_config,
+        # need to specify group_imputers_config and statistic_imputers_config
     )
     expected = pd.DataFrame(
         {

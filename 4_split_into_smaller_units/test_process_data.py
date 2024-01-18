@@ -31,13 +31,19 @@ def test_impute_missing_values():
 
     # Define the configuration for imputation
     group_imputers_config = [
-        {"strategy": "most_frequent", "group_feature": "group", "target_feature": "target"}
+        {
+            "strategy": "most_frequent",
+            "group_feature": "group",
+            "target_feature": "target",
+        }
     ]
     constant_imputers_config = [
         {"features": ["cat_constant"], "impute_value": "missing"},
         {"features": ["num_constant"], "impute_value": 0},
     ]
-    statistic_imputers_config = [{"features": ["cat_statistic"], "strategy": "most_frequent"}]
+    statistic_imputers_config = [
+        {"features": ["cat_statistic"], "strategy": "most_frequent"}
+    ]
 
     # Call the impute function
     imputed_df = impute_missing_values(
@@ -67,9 +73,8 @@ def test_impute_missing_values_with_statistic_imputers():
     )
 
     group_imputers_config = []
-    categorical_constant_imputers_config = []
-    numerical_constant_imputer_config = {"impute_value": 0}
-    categorical_statistic_imputers_config = {"strategy": "most_frequent"}
+    constant_imputers_config = [{"features": ["num"], "impute_value": 0}]
+    statistic_imputers_config = [{"features": ["cat"], "strategy": "most_frequent"}]
 
     expected_df = pd.DataFrame(
         {"cat": ["A", "B", "B", "A", "B", "B", "B"], "num": [1, 2, 3, 0, 5, 0, 7]}
@@ -78,9 +83,8 @@ def test_impute_missing_values_with_statistic_imputers():
     imputed_df = impute_missing_values(
         df,
         group_imputers_config,
-        categorical_constant_imputers_config,
-        numerical_constant_imputer_config,
-        categorical_statistic_imputers_config,
+        constant_imputers_config,
+        statistic_imputers_config,
     )
 
     # Assert that the resulting DataFrame is as expected

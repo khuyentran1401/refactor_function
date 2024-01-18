@@ -76,53 +76,19 @@ def impute_missing_values(
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/train.csv")
+    df = pd.DataFrame(
+        {
+            "Cat": ["A", None, "B", "B"],
+            "Num": [1, None, 3, None],
+        }
+    )
 
-    categorical_features = df.select_dtypes(include=["object"]).columns
-    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
+    numerical_constant_imputer = ConstantImputer(features=["Num"], fill_value=0)
+    categorical_constant_imputer = ConstantImputer(
+        features=["Cat"], fill_value="Missing"
+    )
 
-    group_imputers = [
-        GroupStatisticImputer(
-            strategy=MostFrequentSeriesImputer(),
-            group_feature="MSSubClass",
-            target_feature="MSZoning",
-        ),
-        GroupStatisticImputer(
-            strategy=MedianSeriesImputer(),
-            group_feature="Neighborhood",
-            target_feature="LotFrontage",
-        ),
-    ]
-
-    constant_imputers = [
-        ConstantImputer(features=["Functional"], fill_value="Typ"),
-        ConstantImputer(
-            features=[
-                "Alley",
-                "GarageType",
-                "GarageFinish",
-                "GarageQual",
-                "GarageCond",
-                "BsmtQual",
-                "BsmtCond",
-                "BsmtExposure",
-                "BsmtFinType1",
-                "BsmtFinType2",
-                "FireplaceQu",
-                "PoolQC",
-                "Fence",
-                "MiscFeature",
-            ],
-            fill_value="Missing",
-        ),
-        ConstantImputer(features=numerical_features, fill_value=0),
-    ]
-
-    statistic_imputers = [
-        StatisticsImputer(
-            features=categorical_features, strategy=MostFrequentSeriesImputer()
-        )
-    ]
-    imputers = group_imputers + constant_imputers + statistic_imputers
-    df = impute_missing_values(df, imputers)
-    print(f"There are {df.isna().sum().sum()} null values after imputing")
+    imputed_df = impute_missing_values(
+        df, [numerical_constant_imputer, categorical_constant_imputer]
+    )
+    print(imputed_df)

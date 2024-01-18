@@ -80,59 +80,25 @@ def impute_missing_values(
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/train.csv")
-    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
-    categorical_features = df.select_dtypes(include=["object"]).columns
-    group_imputers_config = [
+    df = pd.DataFrame(
         {
-            "strategy": MostFrequentSeriesImputer(),
-            "group_feature": "MSSubClass",
-            "target_feature": "MSZoning",
-        },
-        {
-            "strategy": MedianSeriesImputer(),
-            "group_feature": "Neighborhood",
-            "target_feature": "LotFrontage",
-        },
-    ]
+            "Cat": ["A", None, "B", "B"],
+            "Num": [1, None, 3, None],
+        }
+    )
 
     constant_imputers_config = [
-        {
-            "impute_value": "Typ",
-            "features": ["Functional"],
-        },
-        {
-            "impute_value": "Missing",
-            "features": [
-                "Alley",
-                "GarageType",
-                "GarageFinish",
-                "GarageQual",
-                "GarageCond",
-                "BsmtQual",
-                "BsmtCond",
-                "BsmtExposure",
-                "BsmtFinType1",
-                "BsmtFinType2",
-                "FireplaceQu",
-                "PoolQC",
-                "Fence",
-                "MiscFeature",
-            ],
-        },
-        {
-            "impute_value": 0,
-            "features": numerical_features,
-        },
-    ]
-    statistic_imputer_config = [
-        {"features": categorical_features, "strategy": MostFrequentSeriesImputer()}
+        {"impute_value": 0, "features": ["Num"]},
+        {"impute_value": "Missing", "features": ["Cat"]},
     ]
 
-    impute_missing_values(
+    imputed_df = impute_missing_values(
         df,
-        group_imputers_config,
-        constant_imputers_config,
-        statistic_imputer_config,
+        constant_imputers_config=constant_imputers_config,
+        # need to specify group_imputers_config and statistic_imputers_config
     )
-    print(f"There are {df.isna().sum().sum()} null values after imputing")
+    print(imputed_df)
+
+    """
+    TypeError: impute_missing_values() missing 2 required positional arguments: 'group_imputers' and 'categorical_statistic_imputers_config'
+    """
