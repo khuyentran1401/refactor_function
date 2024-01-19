@@ -6,7 +6,7 @@ def impute_missing_values_with_group_statistic(
     df: pd.DataFrame,
     group_feature: str,
     target_feature: str,
-    strategy: Literal["most_frequent", "median"],
+    strategy: Literal["most_frequent", "median", "mean"],
 ) -> pd.DataFrame:
     if strategy == "most_frequent":
         df[target_feature] = df.groupby(group_feature)[target_feature].transform(
@@ -16,6 +16,12 @@ def impute_missing_values_with_group_statistic(
         df[target_feature] = df.groupby(group_feature)[target_feature].transform(
             lambda x: x.fillna(x.median())
         )
+    elif strategy == "mean":
+        df[target_feature] = df.groupby(group_feature)[target_feature].transform(
+            lambda x: x.fillna(x.mean())
+        )        
+    else:
+        raise ValueError(f"Invalid strategy: {strategy}")
     return df
 
 
@@ -37,6 +43,8 @@ def impute_missing_values_with_statistics(
         impute_dict = df[features].median().to_dict()
     elif strategy == "mean":
         impute_dict = df[features].mean().to_dict()
+    else:
+        raise ValueError(f"Invalid strategy: {strategy}")
     df[features] = df[features].fillna(impute_dict)
     return df
 

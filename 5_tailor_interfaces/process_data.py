@@ -1,29 +1,8 @@
 import pandas as pd
 from abc import abstractmethod, ABC
-from typing import TypeVar, Iterable
+from typing import TypeVar, Iterable, Literal
 
 NumberOrStr = TypeVar("NumberOrStr", int, float, str)
-
-
-class SeriesImputer(ABC):
-    @abstractmethod
-    def impute(self, series: pd.Series) -> pd.Series:
-        pass
-
-
-class MostFrequentSeriesImputer(SeriesImputer):
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.mode()[0])
-
-
-class MedianSeriesImputer(SeriesImputer):
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.median())
-
-
-class MeanSeriesImputer(SeriesImputer):
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.mean())
 
 
 class DataFrameImputer(ABC):
@@ -34,16 +13,30 @@ class DataFrameImputer(ABC):
 
 class GroupStatisticImputer(DataFrameImputer):
     def __init__(
-        self, strategy: SeriesImputer, group_feature: str, target_feature: str
+        self,
+        strategy: Literal["most_frequent", "median", "mean"],
+        group_feature: str,
+        target_feature: str,
     ):
         self.strategy = strategy
         self.group_feature = group_feature
         self.target_feature = target_feature
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        df[self.target_feature] = df.groupby(self.group_feature)[
-            self.target_feature
-        ].transform(self.strategy.impute)
+        if self.strategy == "most_frequent":
+            df[self.target_feature] = df.groupby(self.group_feature)[
+                self.target_feature
+            ].transform(lambda x: x.fillna(x.mode()[0]))
+        elif self.strategy == "median":
+            df[self.target_feature] = df.groupby(self.group_feature)[
+                self.target_feature
+            ].transform(lambda x: x.fillna(x.median()))
+        elif self.strategy == "mean":
+            df[self.target_feature] = df.groupby(self.group_feature)[
+                self.target_feature
+            ].transform(lambda x: x.fillna(x.mean()))
+        else:
+            raise ValueError(f"Invalid strategy: {self.strategy}")
         return df
 
 
@@ -58,12 +51,24 @@ class ConstantImputer(DataFrameImputer):
 
 
 class StatisticsImputer(DataFrameImputer):
-    def __init__(self, features: Iterable[NumberOrStr], strategy: SeriesImputer):
+    def __init__(
+        self,
+        features: Iterable[NumberOrStr],
+        strategy: Literal["most_frequent", "median", "mean"],
+    ):
         self.features = features
         self.strategy = strategy
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        df[self.features] = df[self.features].apply(self.strategy.impute)
+        if self.strategy == "most_frequent":
+            impute_dict = df[self.features].mode().to_dict(orient="records")[0]
+        elif self.strategy == "median":
+            impute_dict = df[self.features].median().to_dict()
+        elif self.strategy == "mean":
+            impute_dict = df[self.features].mean().to_dict()
+        else:
+            raise ValueError(f"Invalid strategy: {self.strategy}")
+        df[self.features] = df[self.features].fillna(impute_dict)
         return df
 
 
