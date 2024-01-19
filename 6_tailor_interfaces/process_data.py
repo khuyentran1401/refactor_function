@@ -83,12 +83,10 @@ if __name__ == "__main__":
         }
     )
 
-    numerical_constant_imputer = ConstantImputer(features=["Num"], fill_value=0)
-    categorical_constant_imputer = ConstantImputer(
-        features=["Cat"], fill_value="Missing"
-    )
+    constant_imputers = [
+        ConstantImputer(features=["Num"], fill_value=0),
+        ConstantImputer(features=["Cat"], fill_value="Missing"),
+    ]
 
-    imputed_df = impute_missing_values(
-        df, [numerical_constant_imputer, categorical_constant_imputer]
-    )
+    imputed_df = impute_missing_values(df, imputers=constant_imputers)
     print(imputed_df)

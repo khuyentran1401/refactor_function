@@ -31,13 +31,13 @@ def impute_missing_values(df):
     ]:
         df[col] = df[col].fillna("Missing")
 
-    numerical_df = df.select_dtypes(include=["int64", "float64"]).columns
-    df[numerical_df] = df[numerical_df].fillna(0)
+    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
+    df[numerical_features] = df[numerical_features].fillna(0)
 
     # Fill missing values with mode
-    categorical_df = df.select_dtypes(include=["object"]).columns
-    impute_dict_categorical = df[categorical_df].mode().to_dict(orient="records")[0]
-    df[categorical_df] = df[categorical_df].fillna(impute_dict_categorical)
+    categorical_features = df.select_dtypes(include=["object"]).columns
+    impute_dict_categorical = df[categorical_features].mode().to_dict(orient="records")[0]
+    df[categorical_features] = df[categorical_features].fillna(impute_dict_categorical)
     return df
 
 

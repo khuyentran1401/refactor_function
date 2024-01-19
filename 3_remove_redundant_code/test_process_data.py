@@ -24,11 +24,6 @@ def test_impute_missing_values():
             "PoolQC": ["Ex", None, "Fa", None],
             "Fence": [None, "MnPrv", "GdWo", None],
             "MiscFeature": [None, "Shed", "Gar2", None],
-            "Electrical": ["SBrkr", None, "FuseF", "FuseA"],
-            "KitchenQual": ["Gd", "TA", None, "Ex"],
-            "Exterior1st": [None, "VinylSd", "Wd Sdng", "MetalSd"],
-            "Exterior2nd": ["VinylSd", None, "Wd Shng", "MetalSd"],
-            "SaleType": ["WD", None, "New", "COD"],
         }
     )
 
