@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Literal, Union, Optional
+from typing import Literal, Union
 
 
 def impute_missing_values_with_group_statistic(
@@ -8,20 +8,18 @@ def impute_missing_values_with_group_statistic(
     target_feature: str,
     strategy: Literal["most_frequent", "median", "mean"],
 ) -> pd.DataFrame:
-    if strategy == "most_frequent":
-        df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-            lambda x: x.fillna(x.mode()[0])
-        )
-    elif strategy == "median":
-        df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-            lambda x: x.fillna(x.median())
-        )
-    elif strategy == "mean":
-        df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-            lambda x: x.fillna(x.mean())
-        )        
-    else:
+    strategy_functions = {
+        "most_frequent": lambda series: series.fillna(series.mode()[0]),
+        "median": lambda series: series.fillna(series.median()),
+        "mean": lambda series: series.fillna(series.mean()),
+    }
+    if strategy not in strategy_functions:
         raise ValueError(f"Invalid strategy: {strategy}")
+
+    impute_function = strategy_functions[strategy]
+    df[target_feature] = df.groupby(group_feature)[target_feature].transform(
+        impute_function
+    )
     return df
 
 
@@ -37,15 +35,16 @@ def impute_missing_values_with_statistics(
     features: list,
     strategy: Literal["most_frequent", "median", "mean"],
 ) -> pd.DataFrame:
-    if strategy == "most_frequent":
-        impute_dict = df[features].mode().to_dict(orient="records")[0]
-    elif strategy == "median":
-        impute_dict = df[features].median().to_dict()
-    elif strategy == "mean":
-        impute_dict = df[features].mean().to_dict()
-    else:
+    strategy_functions = {
+        "most_frequent": lambda series: series.fillna(series.mode()[0]),
+        "median": lambda series: series.fillna(series.median()),
+        "mean": lambda series: series.fillna(series.mean()),
+    }
+    if strategy not in strategy_functions:
         raise ValueError(f"Invalid strategy: {strategy}")
-    df[features] = df[features].fillna(impute_dict)
+    
+    impute_function = strategy_functions[strategy]
+    df[features] = df[features].apply(impute_function)
     return df
 
 

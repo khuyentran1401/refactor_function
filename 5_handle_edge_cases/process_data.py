@@ -6,25 +6,18 @@ from utils import check_variables_in_df, check_variables_is_list
 NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 
 
-class SeriesImputer(ABC):
-    @abstractmethod
-    def impute(self, series: pd.Series) -> pd.Series:
-        pass
+def get_strategy_function(strategy: Literal["most_frequent", "median", "mean"]):
+    strategy_functions = {
+        "most_frequent": lambda series: series.fillna(
+            series.mode().get(0, default=pd.NA)
+        ),
+        "median": lambda series: series.fillna(series.median()),
+        "mean": lambda series: series.fillna(series.mean()),
+    }
+    if strategy not in strategy_functions:
+        raise ValueError(f"Invalid strategy: {strategy}")
 
-
-class MostFrequentSeriesImputer(SeriesImputer):
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.mode()[0])
-
-
-class MedianSeriesImputer(SeriesImputer):
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.median())
-
-
-class MeanSeriesImputer(SeriesImputer):
-    def impute(self, series: pd.Series) -> pd.Series:
-        return series.fillna(series.mean())
+    return strategy_functions[strategy]
 
 
 class DataFrameImputer(ABC):
@@ -51,20 +44,10 @@ class GroupStatisticImputer(DataFrameImputer):
             raise ValueError(
                 f"Group feature {self.group_feature} cannot contain NaN values"
             )
-        if self.strategy == "most_frequent":
-            df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-                lambda x: x.fillna(x.mode()[0])
-            )
-        elif self.strategy == "median":
-            df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-                lambda x: x.fillna(x.median())
-            )
-        elif self.strategy == "mean":
-            df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-                lambda x: x.fillna(x.mean())
-            )
-        else:
-            raise ValueError(f"Invalid strategy: {self.strategy}")
+        impute_function = get_strategy_function(self.strategy)
+        df[target_feature] = df.groupby(group_feature)[target_feature].transform(
+            impute_function
+        )
         return df
 
 
@@ -94,15 +77,8 @@ class StatisticsImputer(DataFrameImputer):
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
         features = check_variables_in_df(df, self.features)
-        if self.strategy == "most_frequent":
-            impute_dict = df[features].mode().to_dict(orient="records")[0]
-        elif self.strategy == "median":
-            impute_dict = df[features].median().to_dict()
-        elif self.strategy == "mean":
-            impute_dict = df[features].mean().to_dict()
-        else:
-            raise ValueError(f"Invalid strategy: {self.strategy}")
-        df[features] = df[features].fillna(impute_dict)
+        impute_function = get_strategy_function(self.strategy)
+        df[features] = df[features].apply(impute_function)
         return df
 
 

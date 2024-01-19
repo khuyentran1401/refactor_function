@@ -5,6 +5,20 @@ from typing import TypeVar, Iterable, Literal
 NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 
 
+def get_strategy_function(strategy: Literal["most_frequent", "median", "mean"]):
+    strategy_functions = {
+        "most_frequent": lambda series: series.fillna(
+            series.mode().get(0, default=pd.NA)
+        ),
+        "median": lambda series: series.fillna(series.median()),
+        "mean": lambda series: series.fillna(series.mean()),
+    }
+    if strategy not in strategy_functions:
+        raise ValueError(f"Invalid strategy: {strategy}")
+
+    return strategy_functions[strategy]
+
+
 class DataFrameImputer(ABC):
     @abstractmethod
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -23,20 +37,10 @@ class GroupStatisticImputer(DataFrameImputer):
         self.target_feature = target_feature
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        if self.strategy == "most_frequent":
-            df[self.target_feature] = df.groupby(self.group_feature)[
-                self.target_feature
-            ].transform(lambda x: x.fillna(x.mode()[0]))
-        elif self.strategy == "median":
-            df[self.target_feature] = df.groupby(self.group_feature)[
-                self.target_feature
-            ].transform(lambda x: x.fillna(x.median()))
-        elif self.strategy == "mean":
-            df[self.target_feature] = df.groupby(self.group_feature)[
-                self.target_feature
-            ].transform(lambda x: x.fillna(x.mean()))
-        else:
-            raise ValueError(f"Invalid strategy: {self.strategy}")
+        impute_function = get_strategy_function(self.strategy)
+        df[self.target_feature] = df.groupby(self.group_feature)[
+            self.target_feature
+        ].transform(impute_function)
         return df
 
 
@@ -60,15 +64,8 @@ class StatisticsImputer(DataFrameImputer):
         self.strategy = strategy
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        if self.strategy == "most_frequent":
-            impute_dict = df[self.features].mode().to_dict(orient="records")[0]
-        elif self.strategy == "median":
-            impute_dict = df[self.features].median().to_dict()
-        elif self.strategy == "mean":
-            impute_dict = df[self.features].mean().to_dict()
-        else:
-            raise ValueError(f"Invalid strategy: {self.strategy}")
-        df[self.features] = df[self.features].fillna(impute_dict)
+        impute_function = get_strategy_function(self.strategy)
+        df[self.features] = df[self.features].apply(impute_function)
         return df
 
 
