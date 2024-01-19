@@ -1,7 +1,7 @@
 import pandas as pd
 from abc import abstractmethod, ABC
 from typing import Union, Iterable, TypeVar, Literal
-from utils import check_variables_in_df, check_variables_is_list
+from utils import check_variables_is_list
 
 NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 
@@ -38,16 +38,14 @@ class GroupStatisticImputer(DataFrameImputer):
         self.target_feature = target_feature
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        group_feature = check_variables_in_df(df, self.group_feature)
-        target_feature = check_variables_in_df(df, self.target_feature)
-        if df[group_feature].isna().any():
+        if df[self.group_feature].isna().any():
             raise ValueError(
                 f"Group feature {self.group_feature} cannot contain NaN values"
             )
         impute_function = get_strategy_function(self.strategy)
-        df[target_feature] = df.groupby(group_feature)[target_feature].transform(
-            impute_function
-        )
+        df[self.target_feature] = df.groupby(self.group_feature)[
+            self.target_feature
+        ].transform(impute_function)
         return df
 
 
@@ -61,8 +59,7 @@ class ConstantImputer(DataFrameImputer):
         self.fill_value = fill_value
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        features = check_variables_in_df(df, self.features)
-        df[features] = df[features].fillna(self.fill_value)
+        df[self.features] = df[self.features].fillna(self.fill_value)
         return df
 
 
@@ -76,9 +73,8 @@ class StatisticsImputer(DataFrameImputer):
         self.strategy = strategy
 
     def impute(self, df: pd.DataFrame) -> pd.DataFrame:
-        features = check_variables_in_df(df, self.features)
         impute_function = get_strategy_function(self.strategy)
-        df[features] = df[features].apply(impute_function)
+        df[self.features] = df[self.features].apply(impute_function)
         return df
 
 

@@ -28,18 +28,6 @@ class TestGroupStatisticImputer:
             )
             imputer.impute(df)
 
-    def test_group_statistics_feature_not_match(self):
-        with pytest.raises(
-            KeyError, match="The feature Value2 is not in the dataframe"
-        ):
-            df = pd.DataFrame(
-                {"Group": ["A", "A", "B", "B"], "Value": [1, None, 3, None]}
-            )
-            imputer = GroupStatisticImputer(
-                strategy="mean", group_feature="Group", target_feature="Value2"
-            )
-            imputer.impute(df)
-
 
 class TestConstantImputer:
     def test_constant_imputer(self):
@@ -56,14 +44,6 @@ class TestConstantImputer:
         expected = pd.DataFrame({"A": [1, 0, 3]})
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
-    def test_constant_imputer_feature_not_match(self):
-        with pytest.raises(
-            KeyError, match="The following features are not in the dataframe: B"
-        ):
-            df = pd.DataFrame({"A": [1, None, 3]})
-            imputer = ConstantImputer(features=["A", "B"], fill_value=0)
-            imputer.impute(df)
-
 
 class TestStatisticsImputer:
     def test_statistics_imputer(self):
@@ -79,14 +59,6 @@ class TestStatisticsImputer:
         result = imputer.impute(df)
         expected = pd.DataFrame({"A": [1, 2, 3, 2]})
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
-
-    def test_statistics_imputer_feature_not_match(self):
-        with pytest.raises(
-            KeyError, match="The following features are not in the dataframe"
-        ):
-            df = pd.DataFrame({"A": [1, 2, 3, None]})
-            imputer = StatisticsImputer(features=["A", "B", "C"], strategy="mean")
-            imputer.impute(df)
 
 
 class TestImputeMissingValues:
