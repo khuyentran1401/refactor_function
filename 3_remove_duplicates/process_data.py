@@ -46,68 +46,59 @@ def impute_missing_values_with_statistics(
     return df
 
 
-def impute_missing_values(
-    df: pd.DataFrame,
-    group_imputers_config: list,
-    constant_imputers_config: list,
-    statistic_imputer_config: list,
-) -> pd.DataFrame:
-    for imputer in group_imputers_config:
-        df = impute_missing_values_with_group_statistic(
-            df,
-            strategy=imputer.get("strategy"),
-            group_feature=imputer.get("group_feature"),
-            target_feature=imputer.get("target_feature"),
-        )
+def impute_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+    categorical_features = df.select_dtypes(include=["object"]).columns
+    numerical_features = df.select_dtypes(include=["int64", "float64"]).columns
 
-    for imputer in constant_imputers_config:
-        df = impute_missing_values_with_constant(
-            df,
-            features=imputer.get("features"),
-            impute_value=imputer.get("impute_value"),
-        )
-        
-    for imputer in statistic_imputer_config:
-        df = impute_missing_values_with_statistics(
-            df,
-            features=imputer.get("features"),
-            strategy=imputer.get("strategy"),
-        )
+    df = impute_missing_values_with_group_statistic(
+        df,
+        strategy="most_frequent",
+        group_feature="MSSubClass",
+        target_feature="MSZoning",
+    )
+    df = impute_missing_values_with_group_statistic(
+        df,
+        strategy="median",
+        group_feature="Neighborhood",
+        target_feature="LotFrontage",
+    )
+
+    df = impute_missing_values_with_constant(
+        df, features=["Functional"], impute_value="Typ"
+    )
+    df = impute_missing_values_with_constant(
+        df, features=numerical_features, impute_value=0
+    )
+    df = impute_missing_values_with_constant(
+        df,
+        features=[
+            "Alley",
+            "GarageType",
+            "GarageFinish",
+            "GarageQual",
+            "GarageCond",
+            "BsmtQual",
+            "BsmtCond",
+            "BsmtExposure",
+            "BsmtFinType1",
+            "BsmtFinType2",
+            "FireplaceQu",
+            "PoolQC",
+            "Fence",
+            "MiscFeature",
+        ],
+        impute_value="Missing",
+    )
+    df = impute_missing_values_with_statistics(
+        df,
+        features=categorical_features,
+        strategy="most_frequent",
+    )
     return df
 
 
 if __name__ == "__main__":
-    df = pd.DataFrame(
-        {
-            "group": ["A", "A", "B", "B", "B"],
-            "target": [1, 2, None, 4, 4],
-            "num_constant": [None, 2, 3, None, 5],
-            "cat_constant": [None, "A", "B", "C", None],
-            "cat_statistic": [None, "A", "A", "C", None],
-        }
-    )
+    df = pd.read_csv("data/train.csv")
 
-    # Define the configuration for imputation
-    group_imputers_config = [
-        {
-            "strategy": "most_frequent",
-            "group_feature": "group",
-            "target_feature": "target",
-        }
-    ]
-    constant_imputers_config = [
-        {"features": ["cat_constant"], "impute_value": "missing"},
-        {"features": ["num_constant"], "impute_value": 0},
-    ]
-    statistic_imputers_config = [
-        {"features": ["cat_statistic"], "strategy": "most_frequent"}
-    ]
-
-    # Call the impute function
-    imputed_df = impute_missing_values(
-        df,
-        group_imputers_config,
-        constant_imputers_config,
-        statistic_imputers_config,
-    )
-    print(imputed_df)
+    impute_missing_values(df)
+    print(f"There are {df.isna().sum().sum()} null values after imputing")
