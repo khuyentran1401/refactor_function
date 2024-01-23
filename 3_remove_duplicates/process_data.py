@@ -90,9 +90,7 @@ def impute_missing_values(df: pd.DataFrame) -> pd.DataFrame:
         impute_value="Missing",
     )
     df = impute_missing_values_with_statistics(
-        df,
-        features=categorical_features,
-        strategy="most_frequent",
+        df, features=categorical_features, strategy="most_frequent"
     )
     return df
 
