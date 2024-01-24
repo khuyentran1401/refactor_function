@@ -1,6 +1,7 @@
 import pandas as pd
 from abc import abstractmethod, ABC
 from typing import TypeVar, Iterable, Literal
+import numpy as np
 
 NumberOrStr = TypeVar("NumberOrStr", int, float, str)
 
@@ -85,10 +86,24 @@ if __name__ == "__main__":
         }
     )
 
-    constant_imputers = [
+    class RandomImputer(DataFrameImputer):
+        def __init__(self, features: Iterable[NumberOrStr]):
+            self.features = features
+
+        def impute(self, df: pd.DataFrame) -> pd.DataFrame:
+            for feature in self.features:
+                nan_mask = df[feature].isna()
+                non_nan_values = df.loc[~nan_mask, feature].tolist()
+                if non_nan_values:  
+                    df.loc[nan_mask, feature] = nan_mask.loc[nan_mask].apply(
+                        lambda x: np.random.choice(non_nan_values)
+                    )
+            return df
+
+    imputers = [
         ConstantImputer(features=["Num"], fill_value=0),
-        ConstantImputer(features=["Cat"], fill_value="Missing"),
+        RandomImputer(features=["Cat"]),
     ]
 
-    imputed_df = impute_missing_values(df, imputers=constant_imputers)
+    imputed_df = impute_missing_values(df, imputers=imputers)
     print(imputed_df)
